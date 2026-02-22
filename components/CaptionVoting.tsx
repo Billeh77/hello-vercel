@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { VoteButtons } from './VoteButtons';
-import Image from 'next/image';
 
 type Caption = {
   id: string;
@@ -23,7 +22,6 @@ type CaptionVotingProps = {
 export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps) {
   // Filter out already voted captions
   const unvotedCaptions = captions.filter(c => !votedCaptionIds.includes(c.id));
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [localVotedIds, setLocalVotedIds] = useState<string[]>([]);
 
   // Combine server-side voted IDs with local session voted IDs
@@ -61,16 +59,15 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
 
       {/* Caption Card */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-sm">
-        {/* Image */}
+        {/* Image - using regular img tag to avoid Next.js Image optimization issues with external images */}
         {currentCaption.images?.url && (
-          <div className="relative aspect-square w-full bg-slate-900/50">
-            <Image
+          <div className="relative w-full bg-slate-900/50">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={currentCaption.images.url}
               alt={currentCaption.images.image_description || 'Caption image'}
-              fill
-              className="object-contain"
-              sizes="(max-width: 768px) 100vw, 672px"
-              priority
+              className="w-full h-auto max-h-[500px] object-contain mx-auto"
+              loading="eager"
             />
           </div>
         )}
@@ -85,10 +82,11 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
         {/* Divider */}
         <div className="border-t border-slate-700/50" />
 
-        {/* Vote Buttons */}
+        {/* Vote Buttons - key prop forces component to remount when caption changes */}
         <div className="p-6">
           <p className="text-center text-slate-400 text-sm mb-4">Is this caption funny?</p>
           <VoteButtons
+            key={currentCaption.id}
             captionId={currentCaption.id}
             onVoted={handleVoted}
           />
