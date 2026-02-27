@@ -14,7 +14,7 @@ export default async function ProtectedPage() {
     redirect('/login');
   }
 
-  // Fetch captions first
+  // Fetch captions first (only public captions)
   const { data: captions, error: captionsError } = await supabase
     .from('captions')
     .select('id, content, like_count, image_id')
@@ -25,15 +25,14 @@ export default async function ProtectedPage() {
   // Get unique image IDs from captions
   const imageIds = [...new Set(captions?.map(c => c.image_id).filter(Boolean) || [])] as string[];
 
-  // Fetch images separately - also filter by is_public
+  // Fetch images separately - DON'T filter by is_public since caption is already public
   let images: { id: string; url: string; image_description: string | null }[] | null = null;
   
   if (imageIds.length > 0) {
     const result = await supabase
       .from('images')
       .select('id, url, image_description')
-      .in('id', imageIds)
-      .eq('is_public', true);
+      .in('id', imageIds);
     
     images = result.data;
   }
@@ -46,13 +45,13 @@ export default async function ProtectedPage() {
   const firstImageId = images?.[0]?.id;
   const lookupResult = firstCaptionImageId ? imageMap.get(firstCaptionImageId) : null;
 
-  // Combine captions with their images
+  // Combine captions with their images - keep ALL captions, some may have null images
   const allCaptionsWithImages = captions?.map(caption => {
     const image = caption.image_id ? imageMap.get(caption.image_id) : undefined;
     return { ...caption, images: image || null };
   }) || [];
 
-  // Filter to only captions with images for display
+  // Filter to only captions with images for display (RLS may block some)
   const captionsWithImages = allCaptionsWithImages.filter(c => c.images !== null);
 
   // Fetch user's existing votes
@@ -101,7 +100,7 @@ export default async function ProtectedPage() {
           <LogoutButton />
         </div>
 
-        {/* Debug Info */}
+        {/* Debug Info - will remove once working */}
         <div className="mb-4 p-3 bg-slate-800/50 rounded-lg text-xs font-mono text-slate-400 overflow-x-auto">
           <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
         </div>
