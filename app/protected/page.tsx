@@ -22,21 +22,21 @@ export default async function ProtectedPage() {
     .order('created_datetime_utc', { ascending: false })
     .limit(50);
 
-  if (captionsError) {
-    console.error('Error fetching captions:', captionsError);
-  }
-
   // Get unique image IDs from captions
-  const imageIds = [...new Set(captions?.map(c => c.image_id).filter(Boolean) || [])];
+  const imageIds = [...new Set(captions?.map(c => c.image_id).filter(Boolean) || [])] as string[];
 
   // Fetch images separately (workaround for RLS policy blocking joins)
-  const { data: images, error: imagesError } = await supabase
-    .from('images')
-    .select('id, url, image_description')
-    .in('id', imageIds.length > 0 ? imageIds : ['no-ids']);
-
-  if (imagesError) {
-    console.error('Error fetching images:', imagesError);
+  let images: { id: string; url: string; image_description: string | null }[] | null = null;
+  let imagesError: Error | null = null;
+  
+  if (imageIds.length > 0) {
+    const result = await supabase
+      .from('images')
+      .select('id, url, image_description')
+      .in('id', imageIds);
+    
+    images = result.data;
+    imagesError = result.error;
   }
 
   // Create a map for quick image lookup
@@ -55,6 +55,18 @@ export default async function ProtectedPage() {
     .eq('profile_id', user.id);
 
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
+
+  // Debug info
+  const debugInfo = {
+    captionsCount: captions?.length || 0,
+    imageIdsCount: imageIds.length,
+    imagesCount: images?.length || 0,
+    imageMapSize: imageMap.size,
+    firstCaptionImageId: captions?.[0]?.image_id,
+    firstImageData: images?.[0] ? { id: images[0].id, url: images[0].url?.substring(0, 50) + '...' } : null,
+    captionsError: captionsError?.message,
+    imagesError: imagesError?.message,
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -78,6 +90,11 @@ export default async function ProtectedPage() {
             </div>
           </div>
           <LogoutButton />
+        </div>
+
+        {/* Debug Info - Remove in production */}
+        <div className="mb-4 p-3 bg-slate-800/50 rounded-lg text-xs font-mono text-slate-400">
+          <p>Debug: {JSON.stringify(debugInfo)}</p>
         </div>
 
         {/* Page Header */}

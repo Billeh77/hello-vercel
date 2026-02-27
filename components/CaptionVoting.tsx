@@ -7,11 +7,12 @@ type Caption = {
   id: string;
   content: string;
   like_count: number;
+  image_id?: string;
   images: {
     id: string;
     url: string;
     image_description: string | null;
-  } | null;
+  } | null | undefined;
 };
 
 type CaptionVotingProps = {
@@ -74,7 +75,15 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
           </div>
         ) : (
           <div className="w-full h-[200px] bg-slate-900/50 flex items-center justify-center">
-            <p className="text-slate-500">No image available</p>
+            <div className="text-center p-4">
+              <p className="text-slate-500">No image available</p>
+              <p className="text-slate-600 text-xs mt-2">
+                image_id: {currentCaption.image_id || 'none'}
+              </p>
+              <p className="text-slate-600 text-xs">
+                images: {JSON.stringify(currentCaption.images)}
+              </p>
+            </div>
           </div>
         )}
 
