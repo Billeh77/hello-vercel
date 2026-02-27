@@ -14,7 +14,7 @@ export default async function ProtectedPage() {
   }
 
   // Step 1: Fetch public images first
-  const { data: images } = await supabase
+  const { data: images, error: imgError } = await supabase
     .from('images')
     .select('id, url, image_description')
     .eq('is_public', true)
@@ -23,7 +23,7 @@ export default async function ProtectedPage() {
   const imageIds = images?.map(img => img.id) || [];
 
   // Step 2: Fetch public captions for those images
-  const { data: captions } = await supabase
+  const { data: captions, error: capError } = await supabase
     .from('captions')
     .select('id, content, like_count, image_id')
     .eq('is_public', true)
@@ -46,9 +46,29 @@ export default async function ProtectedPage() {
 
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
 
+  // DEBUG
+  const debug = {
+    imagesCount: images?.length,
+    imgError: imgError?.message,
+    captionsCount: captions?.length,
+    capError: capError?.message,
+    combinedCount: captionsWithImages.length,
+    firstCaption: captionsWithImages[0] ? {
+      id: captionsWithImages[0].id,
+      content: captionsWithImages[0].content,
+      hasImage: !!captionsWithImages[0].images,
+      imageUrl: captionsWithImages[0].images?.url
+    } : null
+  };
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* DEBUG */}
+        <pre className="bg-black text-green-400 p-4 rounded mb-4 text-xs overflow-auto">
+          {JSON.stringify(debug, null, 2)}
+        </pre>
+
         {/* User Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
