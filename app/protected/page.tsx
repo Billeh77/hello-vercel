@@ -52,48 +52,42 @@ export default async function ProtectedPage() {
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* User Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+    <main className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col px-4 py-3 max-w-4xl mx-auto w-full min-h-0">
+        {/* User Header - compact */}
+        <div className="flex items-center justify-between mb-3 flex-shrink-0">
+          <div className="flex items-center gap-3">
             {user.user_metadata?.avatar_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={user.user_metadata.avatar_url}
                 alt="Profile"
-                className="w-10 h-10 rounded-full border-2 border-purple-500/50"
+                className="w-8 h-8 rounded-full border-2 border-purple-500/50"
               />
             )}
             <div>
-              <h2 className="text-sm font-medium text-white">
+              <h2 className="text-xs font-medium text-white">
                 {user.user_metadata?.full_name || user.email}
               </h2>
-              <p className="text-xs text-slate-400">{user.email}</p>
             </div>
           </div>
           <LogoutButton />
         </div>
 
-        {/* Caption Voting */}
+        {/* Caption Voting - takes remaining space */}
         {captionsWithImages.length > 0 ? (
           <CaptionVoting 
             captions={captionsWithImages} 
             votedCaptionIds={votedCaptionIds} 
           />
         ) : (
-          <div className="text-center py-16">
-            <div className="inline-block p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
               <p className="text-slate-400 text-lg">No captions available to vote on.</p>
               <p className="text-slate-500 text-sm mt-2">Check back later for new content!</p>
             </div>
           </div>
         )}
-
-        {/* Footer */}
-        <footer className="mt-16 text-center text-slate-500 text-sm">
-          <p>Your votes help improve our caption recommendations</p>
-        </footer>
       </div>
     </main>
   );
