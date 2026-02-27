@@ -175,37 +175,51 @@ Examples of good captions for few-shot learning.
 
 ### Captions with Images
 
-Use the explicit foreign key syntax `images!image_id` for reliable joins:
+⚠️ **RLS Note**: The `images` table has RLS policies that may block joins for authenticated users. Use separate queries instead.
 
+**Recommended Approach (Separate Queries):**
+```typescript
+// 1. Fetch captions
+const { data: captions } = await supabase
+  .from('captions')
+  .select('id, content, like_count, image_id')
+  .eq('is_public', true)
+  .order('created_datetime_utc', { ascending: false });
+
+// 2. Get unique image IDs
+const imageIds = [...new Set(captions?.map(c => c.image_id).filter(Boolean) || [])];
+
+// 3. Fetch images separately
+const { data: images } = await supabase
+  .from('images')
+  .select('id, url, image_description')
+  .in('id', imageIds);
+
+// 4. Create lookup map and combine
+const imageMap = new Map(images?.map(img => [img.id, img]) || []);
+const captionsWithImages = captions?.map(caption => ({
+  ...caption,
+  images: caption.image_id ? imageMap.get(caption.image_id) || null : null
+}));
+```
+
+**Alternative (Direct Join - may fail with RLS):**
 ```typescript
 const { data } = await supabase
   .from('captions')
   .select(`
-    id,
-    content,
-    like_count,
-    image_id,
-    images!image_id (
-      id,
-      url,
-      image_description
-    )
+    id, content, like_count, image_id,
+    images!image_id (id, url, image_description)
   `)
-  .eq('is_public', true)
-  .order('created_datetime_utc', { ascending: false });
+  .eq('is_public', true);
 ```
 
-**Sample Response:**
+**Sample Image Data:**
 ```json
 {
-  "id": "4f0649f9-9b02-40de-8d98-0a9e29053163",
-  "content": "Who needs a battlefield when you have this breakup drama?",
-  "image_id": "595443b4-76b8-4dcf-86b5-a6584c835dff",
-  "images": {
-    "id": "595443b4-76b8-4dcf-86b5-a6584c835dff",
-    "url": "https://images.almostcrackd.ai/98df57b4-8664-44f5-aee4-bdf668a57748/595443b4-76b8-4dcf-86b5-a6584c835dff.jpeg",
-    "image_description": "The image depicts a poignant scene..."
-  }
+  "id": "595443b4-76b8-4dcf-86b5-a6584c835dff",
+  "url": "https://images.almostcrackd.ai/98df57b4-8664-44f5-aee4-bdf668a57748/595443b4-76b8-4dcf-86b5-a6584c835dff.jpeg",
+  "image_description": "The image depicts a poignant scene..."
 }
 ```
 

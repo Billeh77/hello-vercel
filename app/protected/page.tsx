@@ -14,38 +14,47 @@ export default async function ProtectedPage() {
     redirect('/login');
   }
 
-  // Fetch captions with their images using explicit foreign key
+  // Fetch captions first
   const { data: captions, error: captionsError } = await supabase
     .from('captions')
-    .select(`
-      id,
-      content,
-      like_count,
-      image_id,
-      images!image_id (
-        id,
-        url,
-        image_description
-      )
-    `)
+    .select('id, content, like_count, image_id')
     .eq('is_public', true)
     .order('created_datetime_utc', { ascending: false })
     .limit(50);
 
-  // Fetch user's existing votes to know which captions they've already voted on
+  if (captionsError) {
+    console.error('Error fetching captions:', captionsError);
+  }
+
+  // Get unique image IDs from captions
+  const imageIds = [...new Set(captions?.map(c => c.image_id).filter(Boolean) || [])];
+
+  // Fetch images separately (workaround for RLS policy blocking joins)
+  const { data: images, error: imagesError } = await supabase
+    .from('images')
+    .select('id, url, image_description')
+    .in('id', imageIds.length > 0 ? imageIds : ['no-ids']);
+
+  if (imagesError) {
+    console.error('Error fetching images:', imagesError);
+  }
+
+  // Create a map for quick image lookup
+  const imageMap = new Map(images?.map(img => [img.id, img]) || []);
+
+  // Combine captions with their images
+  const captionsWithImages = captions?.map(caption => ({
+    ...caption,
+    images: caption.image_id ? imageMap.get(caption.image_id) || null : null
+  })) || [];
+
+  // Fetch user's existing votes
   const { data: userVotes } = await supabase
     .from('caption_votes')
     .select('caption_id')
     .eq('profile_id', user.id);
 
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
-
-  // Debug logging
-  console.log('Captions fetched:', captions?.length);
-  console.log('First caption:', captions?.[0]);
-  if (captionsError) {
-    console.error('Error fetching captions:', captionsError);
-  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -88,9 +97,9 @@ export default async function ProtectedPage() {
         </header>
 
         {/* Caption Voting */}
-        {captions && captions.length > 0 ? (
+        {captionsWithImages.length > 0 ? (
           <CaptionVoting 
-            captions={captions as any} 
+            captions={captionsWithImages} 
             votedCaptionIds={votedCaptionIds} 
           />
         ) : (

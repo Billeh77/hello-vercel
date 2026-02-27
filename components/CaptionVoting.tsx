@@ -23,7 +23,6 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
   // Filter out already voted captions
   const unvotedCaptions = captions.filter(c => !votedCaptionIds.includes(c.id));
   const [localVotedIds, setLocalVotedIds] = useState<string[]>([]);
-  const [imageError, setImageError] = useState<string | null>(null);
 
   // Combine server-side voted IDs with local session voted IDs
   const remainingCaptions = unvotedCaptions.filter(c => !localVotedIds.includes(c.id));
@@ -47,10 +46,8 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
 
   const handleVoted = () => {
     setLocalVotedIds(prev => [...prev, currentCaption.id]);
-    setImageError(null);
   };
 
-  // Get the image URL
   const imageUrl = currentCaption.images?.url;
 
   return (
@@ -66,36 +63,18 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-sm">
         {/* Image */}
         {imageUrl ? (
-          <div className="relative w-full bg-slate-900/50 min-h-[200px]">
+          <div className="relative w-full bg-slate-900/50">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={imageUrl}
               alt={currentCaption.images?.image_description || 'Caption image'}
               className="w-full h-auto max-h-[500px] object-contain mx-auto"
               loading="eager"
-              onError={(e) => {
-                setImageError(`Failed to load image: ${imageUrl}`);
-                console.error('Image load error:', imageUrl);
-              }}
-              onLoad={() => setImageError(null)}
             />
-            {imageError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80">
-                <div className="text-center p-4">
-                  <p className="text-red-400 text-sm">{imageError}</p>
-                  <p className="text-slate-500 text-xs mt-2 break-all">{imageUrl}</p>
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <div className="w-full h-[200px] bg-slate-900/50 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-slate-500">No image available</p>
-              <p className="text-slate-600 text-xs mt-1">
-                images data: {JSON.stringify(currentCaption.images)}
-              </p>
-            </div>
+            <p className="text-slate-500">No image available</p>
           </div>
         )}
 
