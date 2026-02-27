@@ -175,6 +175,8 @@ Examples of good captions for few-shot learning.
 
 ### Captions with Images
 
+Use the explicit foreign key syntax `images!image_id` for reliable joins:
+
 ```typescript
 const { data } = await supabase
   .from('captions')
@@ -182,7 +184,8 @@ const { data } = await supabase
     id,
     content,
     like_count,
-    images (
+    image_id,
+    images!image_id (
       id,
       url,
       image_description
@@ -190,6 +193,20 @@ const { data } = await supabase
   `)
   .eq('is_public', true)
   .order('created_datetime_utc', { ascending: false });
+```
+
+**Sample Response:**
+```json
+{
+  "id": "4f0649f9-9b02-40de-8d98-0a9e29053163",
+  "content": "Who needs a battlefield when you have this breakup drama?",
+  "image_id": "595443b4-76b8-4dcf-86b5-a6584c835dff",
+  "images": {
+    "id": "595443b4-76b8-4dcf-86b5-a6584c835dff",
+    "url": "https://images.almostcrackd.ai/98df57b4-8664-44f5-aee4-bdf668a57748/595443b4-76b8-4dcf-86b5-a6584c835dff.jpeg",
+    "image_description": "The image depicts a poignant scene..."
+  }
+}
 ```
 
 ### User's Votes

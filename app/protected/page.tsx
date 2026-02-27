@@ -14,14 +14,15 @@ export default async function ProtectedPage() {
     redirect('/login');
   }
 
-  // Fetch captions with their images
+  // Fetch captions with their images using explicit foreign key
   const { data: captions, error: captionsError } = await supabase
     .from('captions')
     .select(`
       id,
       content,
       like_count,
-      images (
+      image_id,
+      images!image_id (
         id,
         url,
         image_description
@@ -39,6 +40,9 @@ export default async function ProtectedPage() {
 
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
 
+  // Debug logging
+  console.log('Captions fetched:', captions?.length);
+  console.log('First caption:', captions?.[0]);
   if (captionsError) {
     console.error('Error fetching captions:', captionsError);
   }
@@ -50,6 +54,7 @@ export default async function ProtectedPage() {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
             {user.user_metadata?.avatar_url && (
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={user.user_metadata.avatar_url}
                 alt="Profile"
@@ -92,7 +97,9 @@ export default async function ProtectedPage() {
           <div className="text-center py-16">
             <div className="inline-block p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
               <p className="text-slate-400 text-lg">No captions available.</p>
-              <p className="text-slate-500 text-sm mt-2">Check back later for new content!</p>
+              <p className="text-slate-500 text-sm mt-2">
+                {captionsError ? `Error: ${captionsError.message}` : 'Check back later for new content!'}
+              </p>
             </div>
           </div>
         )}
