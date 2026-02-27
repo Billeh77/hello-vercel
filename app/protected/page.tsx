@@ -13,32 +13,37 @@ export default async function ProtectedPage() {
     redirect('/login');
   }
 
-  // Step 1: Fetch public images first
-  const { data: images, error: imgError } = await supabase
+  // 1. Fetch ALL images
+  const { data: allImages, error: imgError } = await supabase
     .from('images')
-    .select('id, url, image_description')
-    .eq('is_public', true)
-    .limit(50);
+    .select('id, url, image_description, is_public');
 
-  const imageIds = images?.map(img => img.id) || [];
-
-  // Step 2: Fetch public captions for those images
-  const { data: captions, error: capError } = await supabase
+  // 2. Fetch ALL captions
+  const { data: allCaptions, error: capError } = await supabase
     .from('captions')
-    .select('id, content, like_count, image_id')
-    .eq('is_public', true)
-    .in('image_id', imageIds.length > 0 ? imageIds : ['none'])
-    .order('created_datetime_utc', { ascending: false });
+    .select('id, content, like_count, image_id, is_public');
 
-  // Step 3: Combine - only include captions that have a matching image
-  const imageMap = new Map(images?.map(img => [img.id, img]) || []);
-  
-  const captionsWithImages = captions?.map(caption => ({
-    ...caption,
-    images: imageMap.get(caption.image_id)!
-  })).filter(c => c.images) || [];
+  // 3. Filter images: only public ones
+  const publicImages = allImages?.filter(img => img.is_public === true) || [];
 
-  // Step 4: Get user's existing votes
+  // 4. Filter captions: only ones with non-null content
+  const validCaptions = allCaptions?.filter(cap => cap.content !== null && cap.content !== '') || [];
+
+  // 5. Create image lookup map
+  const imageMap = new Map(publicImages.map(img => [img.id, img]));
+
+  // 6. Match captions to public images - only keep captions that have a matching public image
+  const captionsWithImages = validCaptions
+    .filter(cap => imageMap.has(cap.image_id))
+    .map(cap => ({
+      id: cap.id,
+      content: cap.content,
+      like_count: cap.like_count,
+      image_id: cap.image_id,
+      images: imageMap.get(cap.image_id)!
+    }));
+
+  // 7. Get user's existing votes
   const { data: userVotes } = await supabase
     .from('caption_votes')
     .select('caption_id')
@@ -46,25 +51,26 @@ export default async function ProtectedPage() {
 
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
 
-  // DEBUG
+  // DEBUG - showing the actual data
   const debug = {
-    imagesCount: images?.length,
-    imgError: imgError?.message,
-    captionsCount: captions?.length,
-    capError: capError?.message,
-    combinedCount: captionsWithImages.length,
-    firstCaption: captionsWithImages[0] ? {
+    allImagesCount: allImages?.length ?? 0,
+    imgError: imgError?.message ?? null,
+    allCaptionsCount: allCaptions?.length ?? 0,
+    capError: capError?.message ?? null,
+    publicImagesCount: publicImages.length,
+    validCaptionsCount: validCaptions.length,
+    matchedPairsCount: captionsWithImages.length,
+    sampleCaption: captionsWithImages[0] ? {
       id: captionsWithImages[0].id,
       content: captionsWithImages[0].content,
-      hasImage: !!captionsWithImages[0].images,
-      imageUrl: captionsWithImages[0].images?.url
+      imageUrl: captionsWithImages[0].images.url
     } : null
   };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* DEBUG */}
+        {/* DEBUG - remove after confirming it works */}
         <pre className="bg-black text-green-400 p-4 rounded mb-4 text-xs overflow-auto">
           {JSON.stringify(debug, null, 2)}
         </pre>
@@ -115,8 +121,12 @@ export default async function ProtectedPage() {
         ) : (
           <div className="text-center py-16">
             <div className="inline-block p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
-              <p className="text-slate-400 text-lg">No captions available to vote on.</p>
-              <p className="text-slate-500 text-sm mt-2">Check back later for new content!</p>
+              <p className="text-slate-400 text-lg">No caption-image pairs available.</p>
+              <p className="text-slate-500 text-sm mt-2">
+                {imgError && `Image error: ${imgError.message}. `}
+                {capError && `Caption error: ${capError.message}. `}
+                {!imgError && !capError && `Found ${publicImages.length} public images and ${validCaptions.length} valid captions, but ${captionsWithImages.length} matches.`}
+              </p>
             </div>
           </div>
         )}
