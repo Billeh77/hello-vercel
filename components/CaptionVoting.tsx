@@ -7,12 +7,11 @@ type Caption = {
   id: string;
   content: string;
   like_count: number;
-  image_id?: string;
   images: {
     id: string;
     url: string;
     image_description: string | null;
-  } | null | undefined;
+  };
 };
 
 type CaptionVotingProps = {
@@ -49,8 +48,6 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
     setLocalVotedIds(prev => [...prev, currentCaption.id]);
   };
 
-  const imageUrl = currentCaption.images?.url;
-
   return (
     <div className="max-w-2xl mx-auto">
       {/* Progress indicator */}
@@ -63,29 +60,15 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
       {/* Caption Card */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-sm">
         {/* Image */}
-        {imageUrl ? (
-          <div className="relative w-full bg-slate-900/50">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt={currentCaption.images?.image_description || 'Caption image'}
-              className="w-full h-auto max-h-[500px] object-contain mx-auto"
-              loading="eager"
-            />
-          </div>
-        ) : (
-          <div className="w-full h-[200px] bg-slate-900/50 flex items-center justify-center">
-            <div className="text-center p-4">
-              <p className="text-slate-500">No image available</p>
-              <p className="text-slate-600 text-xs mt-2">
-                image_id: {currentCaption.image_id || 'none'}
-              </p>
-              <p className="text-slate-600 text-xs">
-                images: {JSON.stringify(currentCaption.images)}
-              </p>
-            </div>
-          </div>
-        )}
+        <div className="relative w-full bg-slate-900/50">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={currentCaption.images.url}
+            alt={currentCaption.images.image_description || 'Caption image'}
+            className="w-full h-auto max-h-[500px] object-contain mx-auto"
+            loading="eager"
+          />
+        </div>
 
         {/* Caption */}
         <div className="p-6">

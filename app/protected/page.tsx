@@ -27,7 +27,6 @@ export default async function ProtectedPage() {
 
   // Fetch images separately (workaround for RLS policy blocking joins)
   let images: { id: string; url: string; image_description: string | null }[] | null = null;
-  let imagesError: Error | null = null;
   
   if (imageIds.length > 0) {
     const result = await supabase
@@ -36,17 +35,18 @@ export default async function ProtectedPage() {
       .in('id', imageIds);
     
     images = result.data;
-    imagesError = result.error;
   }
 
   // Create a map for quick image lookup
   const imageMap = new Map(images?.map(img => [img.id, img]) || []);
 
-  // Combine captions with their images
-  const captionsWithImages = captions?.map(caption => ({
-    ...caption,
-    images: caption.image_id ? imageMap.get(caption.image_id) || null : null
-  })) || [];
+  // Combine captions with their images - ONLY include captions that have accessible images
+  const captionsWithImages = captions
+    ?.map(caption => {
+      const image = caption.image_id ? imageMap.get(caption.image_id) : undefined;
+      return image ? { ...caption, images: image } : null;
+    })
+    .filter((caption): caption is NonNullable<typeof caption> => caption !== null) || [];
 
   // Fetch user's existing votes
   const { data: userVotes } = await supabase
@@ -55,18 +55,6 @@ export default async function ProtectedPage() {
     .eq('profile_id', user.id);
 
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
-
-  // Debug info
-  const debugInfo = {
-    captionsCount: captions?.length || 0,
-    imageIdsCount: imageIds.length,
-    imagesCount: images?.length || 0,
-    imageMapSize: imageMap.size,
-    firstCaptionImageId: captions?.[0]?.image_id,
-    firstImageData: images?.[0] ? { id: images[0].id, url: images[0].url?.substring(0, 50) + '...' } : null,
-    captionsError: captionsError?.message,
-    imagesError: imagesError?.message,
-  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -90,11 +78,6 @@ export default async function ProtectedPage() {
             </div>
           </div>
           <LogoutButton />
-        </div>
-
-        {/* Debug Info - Remove in production */}
-        <div className="mb-4 p-3 bg-slate-800/50 rounded-lg text-xs font-mono text-slate-400">
-          <p>Debug: {JSON.stringify(debugInfo)}</p>
         </div>
 
         {/* Page Header */}
