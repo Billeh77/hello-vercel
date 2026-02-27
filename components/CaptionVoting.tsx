@@ -7,6 +7,7 @@ type Caption = {
   id: string;
   content: string;
   like_count: number;
+  image_id: string;
   images: {
     id: string;
     url: string;
@@ -60,13 +61,12 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
       {/* Caption Card */}
       <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl overflow-hidden backdrop-blur-sm">
         {/* Image */}
-        <div className="relative w-full bg-slate-900/50">
+        <div className="relative aspect-square w-full bg-slate-900/50">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={currentCaption.images.url}
             alt={currentCaption.images.image_description || 'Caption image'}
-            className="w-full h-auto max-h-[500px] object-contain mx-auto"
-            loading="eager"
+            className="object-contain w-full h-full"
           />
         </div>
 
@@ -80,7 +80,7 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
         {/* Divider */}
         <div className="border-t border-slate-700/50" />
 
-        {/* Vote Buttons - key prop forces component to remount when caption changes */}
+        {/* Vote Buttons */}
         <div className="p-6">
           <p className="text-center text-slate-400 text-sm mb-4">Is this caption funny?</p>
           <VoteButtons

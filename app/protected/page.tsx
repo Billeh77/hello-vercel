@@ -3,78 +3,48 @@ import { redirect } from 'next/navigation';
 import { LogoutButton } from '@/components/LogoutButton';
 import { CaptionVoting } from '@/components/CaptionVoting';
 
-export const revalidate = 0; // Always fetch fresh data
+export const revalidate = 0;
 
 export default async function ProtectedPage() {
   const supabase = await createClient();
-
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
     redirect('/login');
   }
 
-  // Fetch captions first (only public captions)
-  const { data: captions, error: captionsError } = await supabase
+  // Step 1: Fetch public images first
+  const { data: images } = await supabase
+    .from('images')
+    .select('id, url, image_description')
+    .eq('is_public', true)
+    .limit(50);
+
+  const imageIds = images?.map(img => img.id) || [];
+
+  // Step 2: Fetch public captions for those images
+  const { data: captions } = await supabase
     .from('captions')
     .select('id, content, like_count, image_id')
     .eq('is_public', true)
-    .order('created_datetime_utc', { ascending: false })
-    .limit(50);
+    .in('image_id', imageIds.length > 0 ? imageIds : ['none'])
+    .order('created_datetime_utc', { ascending: false });
 
-  // Get unique image IDs from captions
-  const imageIds = [...new Set(captions?.map(c => c.image_id).filter(Boolean) || [])] as string[];
-
-  // Fetch images separately - DON'T filter by is_public since caption is already public
-  let images: { id: string; url: string; image_description: string | null }[] | null = null;
-  
-  if (imageIds.length > 0) {
-    const result = await supabase
-      .from('images')
-      .select('id, url, image_description')
-      .in('id', imageIds);
-    
-    images = result.data;
-  }
-
-  // Create a map for quick image lookup
+  // Step 3: Combine - only include captions that have a matching image
   const imageMap = new Map(images?.map(img => [img.id, img]) || []);
+  
+  const captionsWithImages = captions?.map(caption => ({
+    ...caption,
+    images: imageMap.get(caption.image_id)!
+  })).filter(c => c.images) || [];
 
-  // Debug: Check if IDs match
-  const firstCaptionImageId = captions?.[0]?.image_id;
-  const firstImageId = images?.[0]?.id;
-  const lookupResult = firstCaptionImageId ? imageMap.get(firstCaptionImageId) : null;
-
-  // Combine captions with their images - keep ALL captions, some may have null images
-  const allCaptionsWithImages = captions?.map(caption => {
-    const image = caption.image_id ? imageMap.get(caption.image_id) : undefined;
-    return { ...caption, images: image || null };
-  }) || [];
-
-  // Filter to only captions with images for display (RLS may block some)
-  const captionsWithImages = allCaptionsWithImages.filter(c => c.images !== null);
-
-  // Fetch user's existing votes
+  // Step 4: Get user's existing votes
   const { data: userVotes } = await supabase
     .from('caption_votes')
     .select('caption_id')
     .eq('profile_id', user.id);
 
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
-
-  // Debug info
-  const debugInfo = {
-    captionsCount: captions?.length || 0,
-    imageIdsCount: imageIds.length,
-    imagesCount: images?.length || 0,
-    imageMapSize: imageMap.size,
-    captionsWithImagesCount: captionsWithImages.length,
-    firstCaptionImageId,
-    firstImageId,
-    lookupWorked: !!lookupResult,
-    sampleImageIds: imageIds.slice(0, 3),
-    sampleReturnedIds: images?.slice(0, 3).map(i => i.id),
-  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -100,11 +70,6 @@ export default async function ProtectedPage() {
           <LogoutButton />
         </div>
 
-        {/* Debug Info - will remove once working */}
-        <div className="mb-4 p-3 bg-slate-800/50 rounded-lg text-xs font-mono text-slate-400 overflow-x-auto">
-          <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-        </div>
-
         {/* Page Header */}
         <header className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-400 text-sm mb-4">
@@ -124,25 +89,21 @@ export default async function ProtectedPage() {
         {/* Caption Voting */}
         {captionsWithImages.length > 0 ? (
           <CaptionVoting 
-            captions={captionsWithImages as any} 
+            captions={captionsWithImages} 
             votedCaptionIds={votedCaptionIds} 
           />
         ) : (
           <div className="text-center py-16">
             <div className="inline-block p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
-              <p className="text-slate-400 text-lg">No captions with images available.</p>
-              <p className="text-slate-500 text-sm mt-2">
-                {captionsError ? `Error: ${captionsError.message}` : `Found ${captions?.length || 0} captions but ${captionsWithImages.length} have accessible images.`}
-              </p>
+              <p className="text-slate-400 text-lg">No captions available to vote on.</p>
+              <p className="text-slate-500 text-sm mt-2">Check back later for new content!</p>
             </div>
           </div>
         )}
 
         {/* Footer */}
         <footer className="mt-16 text-center text-slate-500 text-sm">
-          <p>
-            Your votes help improve our caption recommendations
-          </p>
+          <p>Your votes help improve our caption recommendations</p>
         </footer>
       </div>
     </main>
