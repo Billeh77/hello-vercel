@@ -14,12 +14,12 @@ export default async function ProtectedPage() {
   }
 
   // 1. Fetch ALL images
-  const { data: allImages, error: imgError } = await supabase
+  const { data: allImages } = await supabase
     .from('images')
     .select('id, url, image_description, is_public');
 
   // 2. Fetch ALL captions
-  const { data: allCaptions, error: capError } = await supabase
+  const { data: allCaptions } = await supabase
     .from('captions')
     .select('id, content, like_count, image_id, is_public');
 
@@ -32,7 +32,7 @@ export default async function ProtectedPage() {
   // 5. Create image lookup map
   const imageMap = new Map(publicImages.map(img => [img.id, img]));
 
-  // 6. Match captions to public images - only keep captions that have a matching public image
+  // 6. Match captions to public images
   const captionsWithImages = validCaptions
     .filter(cap => imageMap.has(cap.image_id))
     .map(cap => ({
@@ -51,30 +51,9 @@ export default async function ProtectedPage() {
 
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
 
-  // DEBUG - showing the actual data
-  const debug = {
-    allImagesCount: allImages?.length ?? 0,
-    imgError: imgError?.message ?? null,
-    allCaptionsCount: allCaptions?.length ?? 0,
-    capError: capError?.message ?? null,
-    publicImagesCount: publicImages.length,
-    validCaptionsCount: validCaptions.length,
-    matchedPairsCount: captionsWithImages.length,
-    sampleCaption: captionsWithImages[0] ? {
-      id: captionsWithImages[0].id,
-      content: captionsWithImages[0].content,
-      imageUrl: captionsWithImages[0].images.url
-    } : null
-  };
-
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* DEBUG - remove after confirming it works */}
-        <pre className="bg-black text-green-400 p-4 rounded mb-4 text-xs overflow-auto">
-          {JSON.stringify(debug, null, 2)}
-        </pre>
-
         {/* User Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">
@@ -121,12 +100,8 @@ export default async function ProtectedPage() {
         ) : (
           <div className="text-center py-16">
             <div className="inline-block p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
-              <p className="text-slate-400 text-lg">No caption-image pairs available.</p>
-              <p className="text-slate-500 text-sm mt-2">
-                {imgError && `Image error: ${imgError.message}. `}
-                {capError && `Caption error: ${capError.message}. `}
-                {!imgError && !capError && `Found ${publicImages.length} public images and ${validCaptions.length} valid captions, but ${captionsWithImages.length} matches.`}
-              </p>
+              <p className="text-slate-400 text-lg">No captions available to vote on.</p>
+              <p className="text-slate-500 text-sm mt-2">Check back later for new content!</p>
             </div>
           </div>
         )}
