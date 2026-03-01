@@ -46,35 +46,36 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
   };
 
   return (
-    <div className="flex flex-col flex-1 max-w-lg mx-auto">
+    <div className="flex flex-col max-w-lg mx-auto w-full">
       {/* Progress indicator */}
-      <div className="text-center mb-2">
+      <div className="text-center mb-2 flex-shrink-0">
         <span className="text-slate-400 text-xs">
           {localVotedIds.length + votedCaptionIds.length} voted • {remainingCaptions.length} remaining
         </span>
       </div>
 
-      {/* Caption Card - flex-1 to take available space */}
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden backdrop-blur-sm flex flex-col flex-1 min-h-0">
-        {/* Image - constrained height */}
-        <div className="flex-1 min-h-0 bg-slate-900/50 flex items-center justify-center p-2">
+      {/* Caption Card */}
+      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl overflow-hidden backdrop-blur-sm flex flex-col">
+        {/* Image - FIXED max height, scales to fit */}
+        <div className="bg-slate-900/50 flex items-center justify-center p-2" style={{ maxHeight: '50vh' }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={currentCaption.images.url}
             alt={currentCaption.images.image_description || 'Caption image'}
             className="max-w-full max-h-full object-contain rounded-lg"
+            style={{ maxHeight: 'calc(50vh - 16px)' }}
           />
         </div>
 
         {/* Caption */}
-        <div className="px-4 py-3 border-t border-slate-700/50">
+        <div className="px-4 py-3 border-t border-slate-700/50 flex-shrink-0">
           <p className="text-base text-white text-center font-medium leading-snug">
             &ldquo;{currentCaption.content}&rdquo;
           </p>
         </div>
 
         {/* Vote Buttons */}
-        <div className="px-4 py-3 border-t border-slate-700/50">
+        <div className="px-4 py-3 border-t border-slate-700/50 flex-shrink-0">
           <VoteButtons
             key={currentCaption.id}
             captionId={currentCaption.id}
@@ -84,7 +85,7 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
       </div>
 
       {/* Skip button */}
-      <div className="mt-2 text-center">
+      <div className="mt-2 text-center flex-shrink-0">
         <button
           onClick={handleVoted}
           className="text-slate-500 hover:text-slate-300 text-xs transition-colors"

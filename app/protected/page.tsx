@@ -52,8 +52,8 @@ export default async function ProtectedPage() {
   const votedCaptionIds = userVotes?.map(v => v.caption_id) || [];
 
   return (
-    <main className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col overflow-hidden">
-      <div className="flex-1 flex flex-col px-4 py-3 max-w-4xl mx-auto w-full min-h-0">
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
+      <div className="flex-1 flex flex-col px-4 py-3 max-w-4xl mx-auto w-full">
         {/* User Header - compact */}
         <div className="flex items-center justify-between mb-3 flex-shrink-0">
           <div className="flex items-center gap-3">
