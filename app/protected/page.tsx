@@ -75,12 +75,7 @@ export default async function ProtectedPage() {
           <LogoutButton />
         </div>
 
-        {/* Image Upload Section */}
-        <div className="mb-4 flex-shrink-0 max-w-lg mx-auto w-full">
-          <ImageUpload />
-        </div>
-
-        {/* Caption Voting - takes remaining space */}
+        {/* Caption Voting - centered */}
         {captionsWithImages.length > 0 ? (
           <CaptionVoting 
             captions={captionsWithImages} 
@@ -95,6 +90,9 @@ export default async function ProtectedPage() {
           </div>
         )}
       </div>
+
+      {/* Floating Upload Button & Panel - doesn't affect layout */}
+      <ImageUpload />
     </main>
   );
 }

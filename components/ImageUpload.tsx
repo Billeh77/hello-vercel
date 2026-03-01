@@ -13,12 +13,12 @@ type Caption = {
 
 type UploadState = 
   | { status: 'idle' }
-  | { status: 'selecting' }
   | { status: 'uploading'; step: number; message: string }
   | { status: 'success'; captions: Caption[]; imageUrl: string }
   | { status: 'error'; message: string };
 
 export function ImageUpload() {
+  const [isOpen, setIsOpen] = useState(false);
   const [state, setState] = useState<UploadState>({ status: 'idle' });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -104,7 +104,7 @@ export function ImageUpload() {
       const { imageId } = await registerRes.json();
 
       // Step 4: Generate captions
-      setState({ status: 'uploading', step: 4, message: 'Generating captions... (this may take a moment)' });
+      setState({ status: 'uploading', step: 4, message: 'Generating captions...' });
       const captionRes = await fetch(`${API_BASE}/pipeline/generate-captions`, {
         method: 'POST',
         headers: {
@@ -140,114 +140,181 @@ export function ImageUpload() {
     }
   };
 
+  const closePanel = () => {
+    setIsOpen(false);
+    // Reset state when closing if not uploading
+    if (state.status !== 'uploading') {
+      reset();
+    }
+  };
+
   return (
-    <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 backdrop-blur-sm">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/heic"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
+    <>
+      {/* Floating Button - Bottom Right */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-purple-600 hover:bg-purple-700 rounded-full shadow-lg shadow-purple-900/50 flex items-center justify-center text-white transition-all hover:scale-105 z-40"
+        title="Upload Image"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
 
-      {state.status === 'idle' && (
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-medium transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          Upload Image & Generate Captions
-        </button>
-      )}
-
-      {state.status === 'uploading' && (
-        <div className="text-center py-4">
-          {previewUrl && (
-            <div className="mb-4 flex justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={previewUrl} alt="Preview" className="max-h-32 rounded-lg object-contain" />
-            </div>
-          )}
+      {/* Slide-up Panel */}
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={closePanel}
+          />
           
-          {/* Progress steps */}
-          <div className="flex justify-center gap-2 mb-4">
-            {[1, 2, 3, 4].map((step) => (
-              <div
-                key={step}
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                  step < state.step
-                    ? 'bg-green-500 text-white'
-                    : step === state.step
-                    ? 'bg-purple-500 text-white animate-pulse'
-                    : 'bg-slate-700 text-slate-400'
-                }`}
+          {/* Panel */}
+          <div className="fixed bottom-0 right-0 w-full sm:w-96 sm:bottom-6 sm:right-6 sm:rounded-2xl bg-slate-800 border border-slate-700 shadow-2xl z-50 max-h-[80vh] overflow-y-auto animate-slide-up">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-700 sticky top-0 bg-slate-800">
+              <h3 className="font-semibold text-white">Generate Captions</h3>
+              <button
+                onClick={closePanel}
+                className="text-slate-400 hover:text-white p-1"
               >
-                {step < state.step ? '✓' : step}
-              </div>
-            ))}
-          </div>
-          
-          <p className="text-slate-300 text-sm">{state.message}</p>
-        </div>
-      )}
-
-      {state.status === 'success' && (
-        <div className="py-2">
-          <div className="flex items-center gap-2 text-green-400 mb-3">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="font-medium">Success! {state.captions.length} captions generated</span>
-          </div>
-          
-          {previewUrl && (
-            <div className="mb-3 flex justify-center">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={previewUrl} alt="Uploaded" className="max-h-32 rounded-lg object-contain" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-          )}
-          
-          <div className="space-y-2 mb-4">
-            {state.captions.map((caption, i) => (
-              <div key={caption.id} className="bg-slate-900/50 rounded-lg p-3 text-sm">
-                <span className="text-slate-500 mr-2">{i + 1}.</span>
-                <span className="text-white">&ldquo;{caption.content}&rdquo;</span>
-              </div>
-            ))}
+
+            {/* Content */}
+            <div className="p-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,image/heic"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+
+              {state.status === 'idle' && (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-600 hover:border-purple-500 rounded-xl p-8 text-center cursor-pointer transition-colors"
+                >
+                  <svg className="w-12 h-12 mx-auto text-slate-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-slate-300 font-medium mb-1">Click to select an image</p>
+                  <p className="text-slate-500 text-sm">JPEG, PNG, WebP, GIF, HEIC</p>
+                </div>
+              )}
+
+              {state.status === 'uploading' && (
+                <div className="text-center py-4">
+                  {previewUrl && (
+                    <div className="mb-4 flex justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={previewUrl} alt="Preview" className="max-h-32 rounded-lg object-contain" />
+                    </div>
+                  )}
+                  
+                  {/* Progress steps */}
+                  <div className="flex justify-center gap-2 mb-4">
+                    {[1, 2, 3, 4].map((step) => (
+                      <div
+                        key={step}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                          step < state.step
+                            ? 'bg-green-500 text-white'
+                            : step === state.step
+                            ? 'bg-purple-500 text-white animate-pulse'
+                            : 'bg-slate-700 text-slate-400'
+                        }`}
+                      >
+                        {step < state.step ? '✓' : step}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <p className="text-slate-300 text-sm">{state.message}</p>
+                </div>
+              )}
+
+              {state.status === 'success' && (
+                <div>
+                  <div className="flex items-center gap-2 text-green-400 mb-3">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="font-medium">{state.captions.length} captions generated!</span>
+                  </div>
+                  
+                  {previewUrl && (
+                    <div className="mb-3 flex justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={previewUrl} alt="Uploaded" className="max-h-28 rounded-lg object-contain" />
+                    </div>
+                  )}
+                  
+                  <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                    {state.captions.map((caption, i) => (
+                      <div key={caption.id} className="bg-slate-900/50 rounded-lg p-2.5 text-sm">
+                        <span className="text-slate-500 mr-2">{i + 1}.</span>
+                        <span className="text-white">&ldquo;{caption.content}&rdquo;</span>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <p className="text-slate-500 text-xs mb-3">
+                    Captions saved as private.
+                  </p>
+                  
+                  <button
+                    onClick={reset}
+                    className="w-full py-2 px-4 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium transition-colors"
+                  >
+                    Upload Another
+                  </button>
+                </div>
+              )}
+
+              {state.status === 'error' && (
+                <div className="text-center py-4">
+                  <div className="flex items-center justify-center gap-2 text-red-400 mb-3">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span className="font-medium">Upload Failed</span>
+                  </div>
+                  <p className="text-slate-400 text-sm mb-4">{state.message}</p>
+                  <button
+                    onClick={reset}
+                    className="py-2 px-4 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm transition-colors"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          
-          <p className="text-slate-500 text-xs mb-3">
-            Note: Captions are saved as private. They won&apos;t appear in the voting feed until made public.
-          </p>
-          
-          <button
-            onClick={reset}
-            className="w-full py-2 px-4 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm transition-colors"
-          >
-            Upload Another Image
-          </button>
-        </div>
+        </>
       )}
 
-      {state.status === 'error' && (
-        <div className="py-4 text-center">
-          <div className="flex items-center justify-center gap-2 text-red-400 mb-3">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <span className="font-medium">Upload Failed</span>
-          </div>
-          <p className="text-slate-400 text-sm mb-4">{state.message}</p>
-          <button
-            onClick={reset}
-            className="py-2 px-4 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      )}
-    </div>
+      {/* Animation styles */}
+      <style jsx>{`
+        @keyframes slide-up {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+      `}</style>
+    </>
   );
 }
