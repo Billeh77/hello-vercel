@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { LogoutButton } from '@/components/LogoutButton';
 import { CaptionVoting } from '@/components/CaptionVoting';
+import { ImageUpload } from '@/components/ImageUpload';
 
 export const revalidate = 0;
 
@@ -72,6 +73,11 @@ export default async function ProtectedPage() {
             </div>
           </div>
           <LogoutButton />
+        </div>
+
+        {/* Image Upload Section */}
+        <div className="mb-4 flex-shrink-0 max-w-lg mx-auto w-full">
+          <ImageUpload />
         </div>
 
         {/* Caption Voting - takes remaining space */}
