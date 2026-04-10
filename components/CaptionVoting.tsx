@@ -1,7 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { VoteButtons } from './VoteButtons';
+
+function shuffleCaptions<T extends { id: string }>(items: T[]): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
 
 type Caption = {
   id: string;
@@ -21,9 +30,25 @@ type CaptionVotingProps = {
 };
 
 export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps) {
-  const unvotedCaptions = captions.filter(c => !votedCaptionIds.includes(c.id));
+  const serverUnvotedKey = useMemo(
+    () =>
+      captions
+        .filter((c) => !votedCaptionIds.includes(c.id))
+        .map((c) => c.id)
+        .sort()
+        .join(','),
+    [captions, votedCaptionIds]
+  );
+
+  const shuffledQueue = useMemo(() => {
+    const pool = captions.filter((c) => !votedCaptionIds.includes(c.id));
+    return shuffleCaptions(pool);
+    // Only reshuffle when the set of server-unvoted caption ids changes (key), not on parent re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- captions/votedCaptionIds are consistent with serverUnvotedKey
+  }, [serverUnvotedKey]);
+
   const [localVotedIds, setLocalVotedIds] = useState<string[]>([]);
-  const remainingCaptions = unvotedCaptions.filter(c => !localVotedIds.includes(c.id));
+  const remainingCaptions = shuffledQueue.filter((c) => !localVotedIds.includes(c.id));
 
   if (remainingCaptions.length === 0) {
     return (
@@ -84,17 +109,17 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
         </div>
       </div>
 
-      {/* Skip: advances to next caption (new image + caption) without recording a vote */}
+      {/* Skip: same as advancing in the shuffled queue, without recording a vote */}
       <div className="mt-4 flex-shrink-0 rounded-xl border border-slate-600/60 bg-slate-800/40 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <p className="text-left text-xs text-slate-400 leading-snug sm:max-w-[60%]">
-            Don&apos;t want to vote on this one? Skip loads the <span className="text-slate-300 font-medium">next image and caption</span>—not a random shuffle.
+          <p className="text-left text-xs text-slate-400 leading-snug sm:max-w-[55%]">
+            <span className="text-slate-300">Shuffled order</span> mixes images. Skip = next, no vote.
           </p>
           <button
             type="button"
             onClick={handleVoted}
             className="shrink-0 rounded-lg border border-slate-500 bg-slate-700/80 px-4 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900"
-            title="Show the next caption and image without voting"
+            title="Next item in your shuffled queue, no vote recorded"
           >
             Skip to next caption
           </button>
