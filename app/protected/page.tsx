@@ -75,13 +75,6 @@ export default async function ProtectedPage() {
           <LogoutButton />
         </div>
 
-        {/* Points users to upload (study: corner FAB was missed) */}
-        {captionsWithImages.length > 0 && (
-          <p className="mb-3 text-center text-xs text-slate-400 sm:text-sm">
-            To use your own photo, tap <span className="font-medium text-slate-200">Add your image</span> at the bottom right.
-          </p>
-        )}
-
         {/* Caption Voting - centered */}
         {captionsWithImages.length > 0 ? (
           <CaptionVoting 

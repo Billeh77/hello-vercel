@@ -111,10 +111,6 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
 
       {/* Skip: same as advancing in the shuffled queue, without recording a vote */}
       <div className="mt-4 flex-shrink-0 rounded-xl border border-slate-600/60 bg-slate-800/40 p-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <p className="text-left text-xs text-slate-400 leading-snug sm:max-w-[55%]">
-            <span className="text-slate-300">Shuffled order</span> mixes images. Skip = next, no vote.
-          </p>
           <button
             type="button"
             onClick={handleVoted}
@@ -123,7 +119,6 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
           >
             Skip to next caption
           </button>
-        </div>
       </div>
     </div>
   );
