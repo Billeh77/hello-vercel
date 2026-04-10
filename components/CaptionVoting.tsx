@@ -109,17 +109,14 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
         </div>
       </div>
 
-      {/* Skip: same as advancing in the shuffled queue, without recording a vote */}
-      <div className="mt-4 flex-shrink-0 rounded-xl border border-slate-600/60 bg-slate-800/40 p-3">
-          <button
-            type="button"
-            onClick={handleVoted}
-            className="shrink-0 rounded-lg border border-slate-500 bg-slate-700/80 px-4 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900"
-            title="Next item in your shuffled queue, no vote recorded"
-          >
-            Skip to next caption
-          </button>
-      </div>
+      <button
+        type="button"
+        onClick={handleVoted}
+        className="mt-4 block shrink-0 rounded-lg border border-slate-500 bg-slate-700/80 px-4 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900 mx-auto"
+        title="Next item in your shuffled queue, no vote recorded"
+      >
+        Skip to next caption
+      </button>
     </div>
   );
 }
