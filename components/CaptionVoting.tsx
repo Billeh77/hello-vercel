@@ -84,14 +84,21 @@ export function CaptionVoting({ captions, votedCaptionIds }: CaptionVotingProps)
         </div>
       </div>
 
-      {/* Skip button */}
-      <div className="mt-2 text-center flex-shrink-0">
-        <button
-          onClick={handleVoted}
-          className="text-slate-500 hover:text-slate-300 text-xs transition-colors"
-        >
-          Skip →
-        </button>
+      {/* Skip: advances to next caption (new image + caption) without recording a vote */}
+      <div className="mt-4 flex-shrink-0 rounded-xl border border-slate-600/60 bg-slate-800/40 p-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <p className="text-left text-xs text-slate-400 leading-snug sm:max-w-[60%]">
+            Don&apos;t want to vote on this one? Skip loads the <span className="text-slate-300 font-medium">next image and caption</span>—not a random shuffle.
+          </p>
+          <button
+            type="button"
+            onClick={handleVoted}
+            className="shrink-0 rounded-lg border border-slate-500 bg-slate-700/80 px-4 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-slate-600 hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-slate-900"
+            title="Show the next caption and image without voting"
+          >
+            Skip to next caption
+          </button>
+        </div>
       </div>
     </div>
   );

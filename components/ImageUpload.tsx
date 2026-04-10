@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { getAccessToken } from '@/app/actions/getToken';
 
 const API_BASE = 'https://api.almostcrackd.ai';
@@ -17,11 +17,33 @@ type UploadState =
   | { status: 'success'; captions: Caption[]; imageUrl: string }
   | { status: 'error'; message: string };
 
+const UPLOAD_HINT_KEY = 'hello-vercel-upload-fab-seen';
+
 export function ImageUpload() {
   const [isOpen, setIsOpen] = useState(false);
   const [state, setState] = useState<UploadState>({ status: 'idle' });
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showFabPulse, setShowFabPulse] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && !sessionStorage.getItem(UPLOAD_HINT_KEY)) {
+        setShowFabPulse(true);
+      }
+    } catch {
+      setShowFabPulse(true);
+    }
+  }, []);
+
+  const markFabSeen = () => {
+    try {
+      sessionStorage.setItem(UPLOAD_HINT_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+    setShowFabPulse(false);
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -150,43 +172,61 @@ export function ImageUpload() {
 
   return (
     <>
-      {/* Floating Button - Bottom Right */}
+      {/* Primary action: labeled FAB so users scanning the center still notice upload */}
       <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-purple-600 hover:bg-purple-700 rounded-full shadow-lg shadow-purple-900/50 flex items-center justify-center text-white transition-all hover:scale-105 z-40"
-        title="Upload Image"
+        type="button"
+        onClick={() => {
+          markFabSeen();
+          setIsOpen(true);
+        }}
+        className={`fixed bottom-5 right-4 z-40 flex items-center gap-2 rounded-full bg-purple-600 px-4 py-3.5 text-white shadow-lg shadow-purple-900/50 transition-all hover:bg-purple-700 hover:scale-[1.02] sm:bottom-6 sm:right-6 sm:py-4 sm:pl-5 sm:pr-6 ${showFabPulse ? 'animate-pulse ring-2 ring-purple-400/80 ring-offset-2 ring-offset-slate-900' : ''}`}
+        title="Add your own image and generate captions"
+        aria-label="Add your own image to generate captions"
       >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="h-7 w-7 shrink-0 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
         </svg>
+        <span className="max-w-[11rem] text-left text-sm font-semibold leading-tight sm:max-w-none sm:text-base">
+          Add your image
+        </span>
       </button>
 
-      {/* Slide-up Panel */}
+      {/* Larger centered modal (addresses cramped panel feedback) */}
       {isOpen && (
         <>
           {/* Backdrop */}
           <div 
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 z-40 bg-black/60"
             onClick={closePanel}
+            aria-hidden
           />
           
-          {/* Panel */}
-          <div className="fixed bottom-0 right-0 w-full sm:w-96 sm:bottom-6 sm:right-6 sm:rounded-2xl bg-slate-800 border border-slate-700 shadow-2xl z-50 max-h-[80vh] overflow-y-auto animate-slide-up">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="upload-dialog-title"
+            className="fixed inset-3 z-50 flex max-h-[min(92vh,880px)] min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-600 bg-slate-800 shadow-2xl sm:inset-6 md:left-1/2 md:top-1/2 md:h-auto md:max-h-[min(92vh,880px)] md:max-w-3xl md:-translate-x-1/2 md:-translate-y-1/2 md:inset-auto md:w-[min(92vw,42rem)] animate-slide-up"
+          >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-slate-700 sticky top-0 bg-slate-800">
-              <h3 className="font-semibold text-white">Generate Captions</h3>
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-700 bg-slate-800 px-4 py-3 sm:px-5 sm:py-4">
+              <div>
+                <h3 id="upload-dialog-title" className="text-lg font-semibold text-white sm:text-xl">Generate captions</h3>
+                <p className="mt-0.5 text-xs text-slate-400 sm:text-sm">Upload a photo to get AI captions</p>
+              </div>
               <button
+                type="button"
                 onClick={closePanel}
-                className="text-slate-400 hover:text-white p-1"
+                className="rounded-lg p-2 text-slate-400 hover:bg-slate-700 hover:text-white"
+                aria-label="Close"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -209,11 +249,11 @@ export function ImageUpload() {
               )}
 
               {state.status === 'uploading' && (
-                <div className="text-center py-4">
+                <div className="py-2 text-center">
                   {previewUrl && (
-                    <div className="mb-4 flex justify-center">
+                    <div className="mb-6 flex min-h-[12rem] justify-center rounded-xl bg-slate-900/50 p-4 sm:min-h-[16rem]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={previewUrl} alt="Preview" className="max-h-32 rounded-lg object-contain" />
+                      <img src={previewUrl} alt="Preview" className="max-h-[min(50vh,22rem)] w-auto max-w-full rounded-lg object-contain" />
                     </div>
                   )}
                   
@@ -241,25 +281,25 @@ export function ImageUpload() {
 
               {state.status === 'success' && (
                 <div>
-                  <div className="flex items-center gap-2 text-green-400 mb-3">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="mb-4 flex items-center gap-2 text-green-400">
+                    <svg className="h-6 w-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="font-medium">{state.captions.length} captions generated!</span>
+                    <span className="text-base font-medium sm:text-lg">{state.captions.length} captions generated</span>
                   </div>
                   
                   {previewUrl && (
-                    <div className="mb-3 flex justify-center">
+                    <div className="mb-5 flex min-h-[14rem] justify-center rounded-xl bg-slate-900/50 p-4 sm:min-h-[18rem]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={previewUrl} alt="Uploaded" className="max-h-28 rounded-lg object-contain" />
+                      <img src={previewUrl} alt="Uploaded" className="max-h-[min(55vh,26rem)] w-auto max-w-full rounded-lg object-contain" />
                     </div>
                   )}
                   
-                  <div className="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                  <div className="mb-4 max-h-[min(40vh,20rem)] space-y-3 overflow-y-auto pr-1">
                     {state.captions.map((caption, i) => (
-                      <div key={caption.id} className="bg-slate-900/50 rounded-lg p-2.5 text-sm">
-                        <span className="text-slate-500 mr-2">{i + 1}.</span>
-                        <span className="text-white">&ldquo;{caption.content}&rdquo;</span>
+                      <div key={caption.id} className="rounded-xl bg-slate-900/60 p-4 text-base leading-relaxed text-white">
+                        <span className="mr-2 font-mono text-sm text-slate-500">{i + 1}.</span>
+                        &ldquo;{caption.content}&rdquo;
                       </div>
                     ))}
                   </div>
